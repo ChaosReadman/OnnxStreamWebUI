@@ -34,3 +34,5 @@ echo "ステップ数: $STEPS"
 
 # 画像生成完了メッセージ
 echo "画像生成完了: $OUTFILE"
+
+sync

@@ -28,11 +28,6 @@ def index():
     negative_prompt = request.args.get('negative_prompt', '')
     steps = request.args.get('steps', '1')
 
-    # prompt = request.form.get('prompt', '')
-    # negative_prompt = request.form.get('negative_prompt', '')
-    # steps = request.form.get('steps', '1')
-    # config_name = request.form.get('config_name', '')
-
     return render_template(
         'index.html',
         images=images,
@@ -73,7 +68,8 @@ def handle_form():
         if is_locked():
             return redirect('/?error=locked')
 
-        filename = f"{uuid.uuid4()}.png"
+        # filename = f"{uuid.uuid4()}.png"
+        filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
         subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps])
         return redirect(f"/?prompt={prompt}&negative_prompt={negative_prompt}&steps={steps}")
