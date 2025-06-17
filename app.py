@@ -76,7 +76,7 @@ def handle_form():
         filename = f"{uuid.uuid4()}.png"
         filepath = os.path.join(IMAGE_DIR, filename)
         subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps])
-        return redirect(f"/?prompt={config_data['prompt']}&negative_prompt={config_data['negative_prompt']}&steps={config_data['steps']}")
+        return redirect(f"/?prompt={prompt}&negative_prompt={negative_prompt}&steps={steps}")
         # return redirect('/')
 
     elif action == 'save_config' and config_name:
