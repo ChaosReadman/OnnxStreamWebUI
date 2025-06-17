@@ -29,8 +29,10 @@
                     const veil = document.getElementById('veil');
                     if (data.locked) {
                         veil.style.display = 'block';
+                        return false;
                     } else {
                         veil.style.display = 'none';
+                        return true;
                     }
                 })
                 .catch(console.error);
@@ -42,7 +44,7 @@
     </script>
 
     <h1>画像生成</h1>
-    <form action="/handle_form" method="post">
+    <form action="/handle_form" method="post" onsubmit="return checkLock()">
         <label for="prompt">プロンプト:</label><br>
         <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
         <label for="negative_prompt">ネガティブプロンプト:</label><br>
