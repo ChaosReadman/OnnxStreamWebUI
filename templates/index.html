@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="jp">
+
+<head>
+    <meta charset="UTF-8">
+    <title>SD Image Generator</title>
+</head>
+
+<body>
+    <div id="veil" style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: none;
+        color: white;
+        text-align: center;
+        padding-top: 20%;
+        font-size: 2em;
+    ">
+        画像生成中です。しばらくお待ちください...
+    </div>
+    <script>
+        function checkLock() {
+            fetch('/lock_status')
+                .then(res => res.json())
+                .then(data => {
+                    const veil = document.getElementById('veil');
+                    if (data.locked) {
+                        veil.style.display = 'block';
+                    } else {
+                        veil.style.display = 'none';
+                    }
+                })
+                .catch(console.error);
+        }
+
+        // 初回チェック + 3秒ごとにチェック
+        checkLock();
+        setInterval(checkLock, 3000);
+    </script>
+
+    <h1>画像生成</h1>
+    <form action="/handle_form" method="post">
+        <label for="prompt">プロンプト:</label><br>
+        <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
+        <label for="negative_prompt">ネガティブプロンプト:</label><br>
+        <textarea rows="5" cols="40" id="negative_prompt" name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
+        <label for="steps">ステップ数:</label><br>
+        <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
+        <button type="submit" name="action" value="generate">生成</button><br>
+        <h3>設定の保存</h3>
+        <label for="config_name">設定名:</label>
+        <input type="text" name="config_name">
+        <button type="submit" name="action" value="save_config">設定保存</button>
+    </form>
+
+    <h3>保存された設定を読み込む</h3>
+    <ul>
+        {% for config in config_files %}
+        <li>
+            <form action="load_config" method="POST" style="display:inline;">
+                <input type="hidden" name="config_name" value="{{ config }}">
+                <button type="submit">{{ config }}</button>
+            </form>
+            <form action="delete_config" method="POST" style="display:inline;">
+                <input type="hidden" name="config_name" value="{{ config }}">
+                <button type="submit">削除</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>生成された画像</h2>
+    {% for image in images %}
+    <div style="margin: 10px 0;">
+        <img src="/static/images/{{ image }}" style="max-width: 300px; max-height: 300px;">
+        <br>{{image}}<br>
+        <a href="download/{{ image }}">ダウンロード</a>
+        <a href="delete/{{ image }}">削除</a>
+    </div>
+    {% endfor %}
+</body>
+
+</html>
