@@ -59,3 +59,45 @@ python3 app.py
 ```
 以上で立ち上がります。
 あとはご自分でサービス化するなどやってみてください。
+
+だとわからないと思いますので・・・説明を追加します。
+
+```
+sudo apt install gunicorn
+cd ~/クローンしたところに移動
+
+gunicorn --bind 0.0.0.0:5000 app:app
+```
+
+これで動くことを確認したら、Ctrl+Cで止める
+次に、/etc/systemd/system/onnxstream.serviceを作る
+```
+sudo vi /etc/systemd/system/onnxstream.service
+```
+
+中身は以下の通り、ここもtakahiroがあるので各自の環境に合わせること
+```
+[Unit]
+Description=OnnxStream Web UI via Gunicorn
+After=network.target
+
+[Service]
+User=takahiro
+Group=www-data
+WorkingDirectory=/home/takahiro/sd_web_app
+ExecStart=/usr/bin/gunicorn --workers 3 --bind 0.0.0.0:5000 app:app
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+エディット出来たら起動
+```
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable onnxstream
+sudo systemctl start onnxstream
+```
+
+これで、再起動しても自動的にgunicornでFlaskアプリが立ち上がります。
