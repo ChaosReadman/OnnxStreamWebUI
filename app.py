@@ -11,8 +11,15 @@ CONFIG_DIR = 'config'
 LOCK_FILE = 'generate.lock'
 
 def is_locked():
-    """Check if the generation process is locked."""
-    return os.path.exists(LOCK_FILE)
+    lock_file = 'generate.lock'
+    if os.path.exists(lock_file):
+        with open(lock_file) as f:
+            pid = f.read().strip()
+        if pid.isdigit() and os.path.exists(f"/proc/{pid}"):
+            return True
+        else:
+            os.remove(lock_file)
+    return False
 
 @app.route('/lock_status')
 def lock_status():

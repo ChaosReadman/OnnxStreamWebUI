@@ -15,9 +15,6 @@ if [ -f "$LOCKFILE" ]; then
     fi
 fi
 
-# ロックファイル作成とPID書き込み
-echo $$ > "$LOCKFILE"
-
 OUTFILE=$1
 PROMPT=$2
 NEGATIVE_PROMPT=$3
@@ -33,7 +30,11 @@ STEPS=$4
   --output "$OUTFILE"
 # ---- ここまで画像生成処理 ----
 
-# ロックファイル削除
+# ロックファイル作成とPID書き込み
+SD_PID=$!
+echo "$SD_PID" > "$LOCKFILE"
+
+wait $SD_PID
 rm -f "$LOCKFILE"
 
 sync
