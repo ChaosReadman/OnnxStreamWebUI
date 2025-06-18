@@ -1,6 +1,6 @@
 #!/bin/bash
 
-LOCK_FILE="generate.lock"
+LOCKFILE="generate.lock"
 
 
 # 古いロックがある場合、そのPIDを調べてプロセスの生死を確認
@@ -18,14 +18,19 @@ fi
 # ロックファイル作成とPID書き込み
 echo $$ > "$LOCKFILE"
 
+OUTFILE=$1
+PROMPT=$2
+NEGATIVE_PROMPT=$3
+STEPS=$4
+
 # ---- ここから画像生成処理 ----
 /home/takahiro/OnnxStream/src/build/sd \
   --rpi-lowmem --turbo \
   --models-path /home/takahiro/stable-diffusion-xl-turbo-1.0-anyshape-onnxstream/ \
-  --prompt "$1" \
-  --neg-prompt "$2" \
-  --steps "$3" \
-  --output "$4"
+  --prompt "$PROMPT" \
+  --neg-prompt "$NEGATIVE_PROMPT" \
+  --steps "$STEPS" \
+  --output "$OUTFILE"
 # ---- ここまで画像生成処理 ----
 
 # ロックファイル削除
