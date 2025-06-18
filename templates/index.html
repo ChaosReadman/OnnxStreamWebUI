@@ -74,13 +74,7 @@
 </body>
 <script>
     document.getElementById('genForm').addEventListener('submit', async function (e) {
-        const res = await fetch('/lock_status');
-        const data = await res.json();
-        if (data.locked) {
-            e.preventDefault();
-
-            alert("現在、画像生成中です。完了までお待ちください。");
-        }
+        checkLock();
     });
 
     function checkLock() {
@@ -102,6 +96,7 @@
     // 初回チェック + 3秒ごとにチェック
     checkLock();
     setInterval(checkLock, 3000);
+
 </script>
 
 </html>
