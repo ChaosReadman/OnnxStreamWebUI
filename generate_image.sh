@@ -27,7 +27,7 @@ STEPS=$4
   --prompt "$PROMPT" \
   --neg-prompt "$NEGATIVE_PROMPT" \
   --steps "$STEPS" \
-  --output "$OUTFILE"
+  --output "$OUTFILE" &
 # ---- ここまで画像生成処理 ----
 
 # ロックファイル作成とPID書き込み
