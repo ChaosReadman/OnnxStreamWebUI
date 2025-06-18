@@ -21,34 +21,14 @@
     ">
         画像生成中です。しばらくお待ちください...
     </div>
-    <script>
-        function checkLock() {
-            fetch('/lock_status')
-                .then(res => res.json())
-                .then(data => {
-                    const veil = document.getElementById('veil');
-                    if (data.locked) {
-                        veil.style.display = 'block';
-                        return false;
-                    } else {
-                        veil.style.display = 'none';
-                        return true;
-                    }
-                })
-                .catch(console.error);
-        }
-
-        // 初回チェック + 3秒ごとにチェック
-        checkLock();
-        setInterval(checkLock, 3000);
-    </script>
-
     <h1>画像生成</h1>
-    <form action="/handle_form" method="post" onsubmit="return checkLock()">
+
+    <form id="genForm" action="/handle_form" method="post">
         <label for="prompt">プロンプト:</label><br>
         <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
         <label for="negative_prompt">ネガティブプロンプト:</label><br>
-        <textarea rows="5" cols="40" id="negative_prompt" name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
+        <textarea rows="5" cols="40" id="negative_prompt"
+            name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
         <label for="steps">ステップ数:</label><br>
         <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
         <button type="submit" name="action" value="generate">生成</button><br>
@@ -60,6 +40,7 @@
 
     <h3>保存された設定を読み込む</h3>
     <ul>
+        {% if config_files %}
         {% for config in config_files %}
         <li>
             <form action="load_config" method="POST" style="display:inline;">
@@ -72,9 +53,13 @@
             </form>
         </li>
         {% endfor %}
+        {% else %}
+        <li>保存された設定はありません。</li>
+        {% endif %}
     </ul>
 
     <h2>生成された画像</h2>
+    {% if images %}
     {% for image in images %}
     <div style="margin: 10px 0;">
         <img src="/static/images/{{ image }}" style="max-width: 300px; max-height: 300px;">
@@ -83,6 +68,40 @@
         <a href="delete/{{ image }}">削除</a>
     </div>
     {% endfor %}
+    {% else %}
+    <p>まだ画像が生成されていません。</p>
+    {% endif %}
 </body>
+<script>
+    document.getElementById('genForm').addEventListener('submit', async function (e) {
+        const res = await fetch('/lock_status');
+        const data = await res.json();
+        if (data.locked) {
+            e.preventDefault();
+
+            alert("現在、画像生成中です。完了までお待ちください。");
+        }
+    });
+
+    function checkLock() {
+        fetch('/lock_status')
+            .then(res => res.json())
+            .then(data => {
+                const veil = document.getElementById('veil');
+                if (data.locked) {
+                    veil.style.display = 'block';
+                    return false;
+                } else {
+                    veil.style.display = 'none';
+                    return true;
+                }
+            })
+            .catch(console.error);
+    }
+
+    // 初回チェック + 3秒ごとにチェック
+    checkLock();
+    setInterval(checkLock, 3000);
+</script>
 
 </html>

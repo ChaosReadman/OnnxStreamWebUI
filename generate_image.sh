@@ -1,7 +1,6 @@
 #!/bin/bash
 
-LOCKFILE="generate.lock"
-
+LOCKFILE="/tmp/generate.lock"
 
 # 古いロックがある場合、そのPIDを調べてプロセスの生死を確認
 if [ -f "$LOCKFILE" ]; then
@@ -28,13 +27,20 @@ STEPS=$4
   --neg-prompt "$NEGATIVE_PROMPT" \
   --steps "$STEPS" \
   --output "$OUTFILE" &
-# ---- ここまで画像生成処理 ----
 
-# ロックファイル作成とPID書き込み
 SD_PID=$!
-echo "$SD_PID" > "$LOCKFILE"
+trap "rm -f $LOCKFILE" EXIT
+sleep 0.1  # プロセス立ち上がりを待つ
+
+echo "生成開始: PID=$SD_PID PROMPT=$PROMPT" >> /tmp/generate.log
+
+if kill -0 "$SD_PID" 2>/dev/null; then
+    echo "$SD_PID" > "$LOCKFILE"
+else
+    echo "画像生成プロセスの起動に失敗しました"
+    exit 1
+fi
 
 wait $SD_PID
 rm -f "$LOCKFILE"
-
 sync

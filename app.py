@@ -8,17 +8,16 @@ from datetime import datetime
 app = Flask(__name__)
 IMAGE_DIR = 'static/images'
 CONFIG_DIR = 'config'
-LOCK_FILE = 'generate.lock'
+LOCK_FILE = '/tmp/generate.lock'
 
 def is_locked():
-    lock_file = 'generate.lock'
-    if os.path.exists(lock_file):
-        with open(lock_file) as f:
+    if os.path.exists(LOCK_FILE):
+        with open(LOCK_FILE) as f:
             pid = f.read().strip()
         if pid.isdigit() and os.path.exists(f"/proc/{pid}"):
             return True
         else:
-            os.remove(lock_file)
+            os.remove(LOCK_FILE)
     return False
 
 @app.route('/lock_status')
@@ -79,7 +78,8 @@ def handle_form():
         # filename = f"{uuid.uuid4()}.png"
         filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
-        subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps])
+        subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps], check=True)
+
         return redirect(f"/?prompt={prompt}&negative_prompt={negative_prompt}&steps={steps}")
         # return redirect('/')
 
