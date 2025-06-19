@@ -63,10 +63,9 @@ sudo apt install php libapache2-mod-php
     次に、Flaskを実行
 ```
 python3 app.py
-```
-    以上で立ち上がります。あとはご自分でサービス化するなどやってみてください。
 
-    だとわからないと思いますので・・・サービス化をする説明を追加します。
+```
++ 以上で立ち上がります。あとはご自分でサービス化するなどやってみてください。だとわからないと思いますので・・・サービス化をする説明を追加します。
 
 ```
 sudo apt install gunicorn
@@ -74,12 +73,12 @@ cd ~/クローンしたところに移動
 
 gunicorn --bind 0.0.0.0:5000 app:app
 ```
-    これで動くことを確認したら、Ctrl+Cで止め、/etc/systemd/system/onnxstream.serviceを作ってください。
++ これで動くことを確認したら、Ctrl+Cで止め、/etc/systemd/system/onnxstream.serviceを作ってください。
 ```
 sudo vi /etc/systemd/system/onnxstream.service
 ```
 
-    中身は以下の通り、ここもtakahiroがあるので各自の環境に合わせること
++ 中身は以下の通り、ここもtakahiroがあるので各自の環境に合わせること
 ```
 [Unit]
 Description=OnnxStream Web UI via Gunicorn
@@ -96,7 +95,7 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 ```
-    上記の通りエディット出来たら起動
++ 上記の通りエディット出来たら起動
 ```
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
@@ -104,8 +103,6 @@ sudo systemctl enable onnxstream
 sudo systemctl start onnxstream
 ```
 
-    これで、再起動しても自動的にgunicornでFlaskアプリが立ち上がります。
-
-    外に出したい場合は、Apacheなりnginxなり使ってください。
-    この説明はすごく面倒なのでご自分で調べてください。
-    なお、外に出して攻撃されても、こちらにはなんの責任もありません。
++ これで、再起動しても自動的にgunicornでFlaskアプリが立ち上がります。外に出したい場合は、Apacheなりnginxなり使ってください。
+この説明はすごく面倒なのでご自分で調べてください。
+なお、外に出して攻撃されても、こちらにはなんの責任もありません。
