@@ -51,8 +51,6 @@ sudo apt install python3-guizero
 sudo apt install python3-pillow
 sudo apt install python3-flask
 sudo apt install ph8.4-cli
-sudo apt install apache2
-sudo apt install php libapache2-mod-php
 
 ```
 
