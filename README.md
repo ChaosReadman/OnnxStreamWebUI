@@ -50,7 +50,6 @@ sudo apt install python3.13-full
 sudo apt install python3-guizero
 sudo apt install python3-pillow
 sudo apt install python3-flask
-sudo apt install ph8.4-cli
 
 ```
 
