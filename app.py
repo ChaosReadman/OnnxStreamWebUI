@@ -72,13 +72,12 @@ def handle_form():
     config_name = request.form.get('config_name')
 
     if action == 'generate':
-        if is_locked():
-            return redirect('/?error=locked')
-
+        # if is_locked():
+        #     return redirect('/?error=locked')
         # filename = f"{uuid.uuid4()}.png"
         filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
-        subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps], check=True)
+        subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps])
 
         return redirect(f"/?prompt={prompt}&negative_prompt={negative_prompt}&steps={steps}")
         # return redirect('/')

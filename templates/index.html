@@ -73,6 +73,8 @@
     {% endif %}
 </body>
 <script>
+    refreshed = true;
+
     document.getElementById('genForm').addEventListener('submit', async function (e) {
         checkLock();
     });
@@ -83,11 +85,15 @@
             .then(data => {
                 const veil = document.getElementById('veil');
                 if (data.locked) {
+                    refreshed = false;
                     veil.style.display = 'block';
-                    return false;
                 } else {
+                    if (!refreshed) {
+                        // ページを/に移動する
+                        window.location.href = '/';
+                        refreshed = true;
+                    }
                     veil.style.display = 'none';
-                    return true;
                 }
             })
             .catch(console.error);
