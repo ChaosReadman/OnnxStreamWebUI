@@ -4,73 +4,128 @@
 <head>
     <meta charset="UTF-8">
     <title>SD Image Generator</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #left-pane {
+            width: 40%;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+        }
+
+        #right-pane {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .image-item {
+            text-align: center;
+        }
+
+        .image-item img {
+            max-width: 100%;
+            max-height: 200px;
+            border: 1px solid #ccc;
+        }
+
+        #veil {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            color: white;
+            text-align: center;
+            padding-top: 20%;
+            font-size: 2em;
+        }
+    </style>
 </head>
 
 <body>
-    <div id="veil" style="
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        display: none;
-        color: white;
-        text-align: center;
-        padding-top: 20%;
-        font-size: 2em;
-    ">
-        画像生成中です。しばらくお待ちください...
-    </div>
-    <h1>画像生成</h1>
+    <div id="veil">画像生成中です。しばらくお待ちください...</div>
+    <div id="container">
+        <div id="left-pane">
 
-    <form id="genForm" action="/handle_form" method="post">
-        <label for="prompt">プロンプト:</label><br>
-        <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
-        <label for="negative_prompt">ネガティブプロンプト:</label><br>
-        <textarea rows="5" cols="40" id="negative_prompt"
-            name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
-        <label for="steps">ステップ数:</label><br>
-        <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
-        <button type="submit" name="action" value="generate">生成</button><br>
-        <h3>設定の保存</h3>
-        <label for="config_name">設定名:</label>
-        <input type="text" name="config_name">
-        <button type="submit" name="action" value="save_config">設定保存</button>
-    </form>
+            <h1>画像生成</h1>
 
-    <h3>保存された設定を読み込む</h3>
-    <ul>
-        {% if config_files %}
-        {% for config in config_files %}
-        <li>
-            <form action="load_config" method="POST" style="display:inline;">
-                <input type="hidden" name="config_name" value="{{ config }}">
-                <button type="submit">{{ config }}</button>
+            <form id="genForm" action="/handle_form" method="post">
+                <label for="prompt">プロンプト:</label><br>
+                <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
+                <label for="negative_prompt">ネガティブプロンプト:</label><br>
+                <textarea rows="5" cols="40" id="negative_prompt"
+                    name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
+                <label for="steps">ステップ数:</label><br>
+                <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
+                <button type="submit" name="action" value="generate">生成</button><br>
+                <h3>設定の保存</h3>
+                <label for="config_name">設定名:</label>
+                <input type="text" name="config_name">
+                <button type="submit" name="action" value="save_config">設定保存</button>
             </form>
-            <form action="delete_config" method="POST" style="display:inline;">
-                <input type="hidden" name="config_name" value="{{ config }}">
-                <button type="submit">削除</button>
-            </form>
-        </li>
-        {% endfor %}
-        {% else %}
-        <li>保存された設定はありません。</li>
-        {% endif %}
-    </ul>
 
-    <h2>生成された画像</h2>
-    {% if images %}
-    {% for image in images %}
-    <div style="margin: 10px 0;">
-        <img src="/static/images/{{ image }}" style="max-width: 300px; max-height: 300px;">
-        <br>{{image}}<br>
-        <a href="download/{{ image }}">ダウンロード</a>
-        <a href="delete/{{ image }}">削除</a>
+            <h3>保存された設定を読み込む</h3>
+            <ul>
+                {% if config_files %}
+                {% for config in config_files %}
+                <li>
+                    <form action="load_config" method="POST" style="display:inline;">
+                        <input type="hidden" name="config_name" value="{{ config }}">
+                        <button type="submit">{{ config }}</button>
+                    </form>
+                    <form action="delete_config" method="POST" style="display:inline;">
+                        <input type="hidden" name="config_name" value="{{ config }}">
+                        <button type="submit">削除</button>
+                    </form>
+                </li>
+                {% endfor %}
+                {% else %}
+                <li>保存された設定はありません。</li>
+                {% endif %}
+            </ul>
+        </div>
+        <div id="right-pane">
+            <h2>生成された画像</h2>
+            {% if images %}
+            <div id="image-grid">
+                {% for image in images %}
+                <div class="image-item">
+                    <img src="/static/images/{{ image }}" alt="{{ image }}">
+                    <div>{{ image }}</div>
+                    <a href="download/{{ image }}">ダウンロード</a> |
+                    <a href="delete/{{ image }}">削除</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>まだ画像が生成されていません。</p>
+            {% endif %}
+        </div>
+
     </div>
-    {% endfor %}
-    {% else %}
-    <p>まだ画像が生成されていません。</p>
-    {% endif %}
+
 </body>
 <script>
     refreshed = true;
