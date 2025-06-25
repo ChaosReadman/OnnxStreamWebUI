@@ -1,4 +1,3 @@
 generate.lock
-config/*
 static/images/*
 __pycache__/*

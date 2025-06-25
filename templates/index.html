@@ -17,7 +17,7 @@
         }
 
         #left-pane {
-            width: 40%;
+            width: 30%;
             padding: 20px;
             border-right: 1px solid #ccc;
             box-sizing: border-box;
@@ -31,20 +31,25 @@
             box-sizing: border-box;
         }
 
-        #image-grid {
+        .image-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 16px;
         }
 
-        .image-item {
-            text-align: center;
+        .thumbnail-container {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            padding: 4px;
+            background-color: #fafafa;
         }
 
-        .image-item img {
-            max-width: 100%;
-            max-height: 200px;
-            border: 1px solid #ccc;
+        .thumbnail-container img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            cursor: zoom-in;
         }
 
         #veil {
@@ -65,93 +70,129 @@
 </head>
 
 <body>
-    <div id="veil">画像生成中です。しばらくお待ちください...</div>
+    <div id="veil">
+        画像生成中です。しばらくお待ちください...<br><br>
+        <div id="start-time"></div>
+        <div id="elapsed-time"></div>
+        <button onclick="cancelGeneration()">キャンセル</button>
+    </div>
+
     <div id="container">
         <div id="left-pane">
 
             <h1>画像生成</h1>
-
             <form id="genForm" action="/handle_form" method="post">
                 <label for="prompt">プロンプト:</label><br>
-                <textarea rows="5" cols="40" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
+                <textarea rows="10" cols="60" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
                 <label for="negative_prompt">ネガティブプロンプト:</label><br>
-                <textarea rows="5" cols="40" id="negative_prompt"
+                <textarea rows="10" cols="60" id="negative_prompt"
                     name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
                 <label for="steps">ステップ数:</label><br>
                 <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
                 <button type="submit" name="action" value="generate">生成</button><br>
-                <h3>設定の保存</h3>
-                <label for="config_name">設定名:</label>
-                <input type="text" name="config_name">
-                <button type="submit" name="action" value="save_config">設定保存</button>
-            </form>
 
-            <h3>保存された設定を読み込む</h3>
-            <ul>
-                {% if config_files %}
-                {% for config in config_files %}
-                <li>
-                    <form action="load_config" method="POST" style="display:inline;">
-                        <input type="hidden" name="config_name" value="{{ config }}">
-                        <button type="submit">{{ config }}</button>
-                    </form>
-                    <form action="delete_config" method="POST" style="display:inline;">
-                        <input type="hidden" name="config_name" value="{{ config }}">
-                        <button type="submit">削除</button>
-                    </form>
-                </li>
-                {% endfor %}
-                {% else %}
-                <li>保存された設定はありません。</li>
-                {% endif %}
-            </ul>
+                <h3>画像サイズの選択</h3>
+                <label for="image_width">幅 (WIDTH):</label><br>
+                <select id="image_width" name="image_width">
+                    {% for w in range(512, 1025, 256) %}
+                    <option value="{{ w }}" {% if w== image_width  %}selected{% endif %}>{{ w }}</option>
+                    {% endfor %}
+                </select><br><br>
+
+                <label for="image_height">高さ (HEIGHT):</label><br>
+                <select id="image_height" name="image_height">
+                    {% for h in range(512, 1025, 256) %}
+                    <option value="{{ h }}" {% if h== image_height %}selected{% endif %}>{{ h }}</option>
+                    {% endfor %}
+                </select><br><br>
+            </form>
         </div>
         <div id="right-pane">
             <h2>生成された画像</h2>
-            {% if images %}
-            <div id="image-grid">
-                {% for image in images %}
-                <div class="image-item">
-                    <img src="/static/images/{{ image }}" alt="{{ image }}">
-                    <div>{{ image }}</div>
-                    <a href="download/{{ image }}">ダウンロード</a> |
-                    <a href="delete/{{ image }}">削除</a>
+            <div class="image-grid">
+                {% for entry in image_entries %}
+                <div class="thumbnail-container">
+                    <img src="/static/images/{{ entry.filename }}" alt="{{ entry.filename }}">
+                    <div>{{ entry.filename }}</div>
+                    <a href="download/{{ entry.filename }}">ダウンロード</a> |
+                    <a href="delete/{{ entry.filename }}">削除</a>
                 </div>
+                <ul style="font-family: monospace;">
+                    <li><strong>Prompt:</strong> {{ entry.metadata.prompt or "" }}</li>
+                    <li><strong>Negative:</strong> {{ entry.metadata.negative_prompt or "" }}</li>
+                    <li><strong>Steps:</strong> {{ entry.metadata.steps or "" }}</li>
+                    <li><strong>サイズ:</strong> {{ entry.metadata.width }} x {{ entry.metadata.height }}</li>
+                    <li><strong>生成日時:</strong> {{ entry.metadata.created_at or "" }}</li>
+                </ul>
                 {% endfor %}
             </div>
-            {% else %}
-            <p>まだ画像が生成されていません。</p>
-            {% endif %}
         </div>
-
-    </div>
-
 </body>
 <script>
-    refreshed = true;
+    let refreshed = true;
+    let startTime = null;
 
     document.getElementById('genForm').addEventListener('submit', async function (e) {
         checkLock();
     });
 
-    function checkLock() {
-        fetch('/lock_status')
-            .then(res => res.json())
-            .then(data => {
-                const veil = document.getElementById('veil');
+    function formatElapsed(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}分 ${secs}秒`;
+    }
+
+    async function checkLock() {
+        const veil = document.getElementById('veil');
+        const startElem = document.getElementById('start-time');
+        const elapsedElem = document.getElementById('elapsed-time');
+        try {
+            const res = await fetch('/lock_status');
+            const data = await res.json();
                 if (data.locked) {
                     refreshed = false;
                     veil.style.display = 'block';
+                    if (data.started_at) {
+                        startTimestamp = new Date(data.started_at * 1000);
+                        const now = new Date();
+                        const elapsedSec = Math.floor((now - startTimestamp) / 1000);
+
+                        startElem.textContent = `開始時刻: ${startTimestamp.toLocaleString()}`;
+                        elapsedElem.textContent = `経過時間: ${formatElapsed(elapsedSec)}`;
+                    }
                 } else {
                     if (!refreshed) {
+                        refreshed = true;
                         // ページを/に移動する
                         window.location.href = '/';
-                        refreshed = true;
                     }
                     veil.style.display = 'none';
                 }
+                // 経過時間の更新
+                if (startTime) {
+                    const now = new Date();
+                    const diff = Math.floor((now - startTime) / 1000);
+                    const minutes = Math.floor(diff / 60);
+                    const seconds = diff % 60;
+                    elapsedElem.textContent = `経過時間: ${minutes}分 ${seconds}秒`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+    }
+
+    function cancelGeneration() {
+        fetch('/cancel', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                alert('キャンセルしました');
+                veil.style.display = 'none';
             })
-            .catch(console.error);
+            .catch(err => {
+                alert('キャンセルに失敗しました');
+                console.error(err);
+            });
     }
 
     // 初回チェック + 3秒ごとにチェック
