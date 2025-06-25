@@ -4,7 +4,7 @@ import subprocess
 import uuid
 import json
 import os, signal
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
 app = Flask(__name__)
@@ -12,6 +12,8 @@ IMAGE_DIR = 'static/images'
 
 LOCK_FILE = '/tmp/generate.lock'
 
+# 日本時間のタイムゾーン設定
+JST = timezone(timedelta(hours=9))
 
 @app.route('/lock_status')
 def lock_status():
@@ -62,6 +64,32 @@ def index():
                 "filename": image_file,
                 "metadata": metadata
             })
+
+    for entry in image_entries:
+        try:
+            # ファイル名から日時を取得（naive → aware に変換）
+            base_name = os.path.basename(entry['filename'])
+            name_part = os.path.splitext(base_name)[0]
+            start_time = datetime.strptime(name_part, '%Y-%m-%d_%H%M%S')
+            start_time = start_time.replace(tzinfo=JST)  # JST に変換
+
+            # JSON 側
+            end_time_str = entry['metadata'].get('created_at')
+            if end_time_str:
+                end_time = datetime.fromisoformat(end_time_str)
+
+                delta = end_time - start_time
+                seconds = int(delta.total_seconds())
+                hrs = str(seconds // 3600).zfill(2)
+                mins = str((seconds % 3600) // 60).zfill(2)
+                secs = str(seconds % 60).zfill(2)
+                entry['metadata']['duration'] = f"{hrs}:{mins}:{secs}"
+            else:
+                entry['metadata']['duration'] = "不明"
+        except Exception as e:
+            entry['metadata']['duration'] = "不明"
+            print(f"[生成時間エラー] {entry['filename']}: {e}")
+
     #デフォルトフォーム値を設定
     prompt = request.args.get('prompt', '')
     negative_prompt = request.args.get('negative_prompt', '')

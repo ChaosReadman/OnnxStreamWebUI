@@ -101,13 +101,11 @@
             <h1>画像生成</h1>
             <form id="genForm" action="/handle_form" method="post">
                 <label for="prompt">プロンプト:</label><br>
-                <textarea rows="10" cols="60" id="prompt" name="prompt" required>{{ prompt }}</textarea><br><br>
+                <textarea rows="10" id="prompt" name="prompt" required style="width: 100%;">{{ prompt }}</textarea>
                 <label for="negative_prompt">ネガティブプロンプト:</label><br>
-                <textarea rows="10" cols="60" id="negative_prompt"
-                    name="negative_prompt">{{ negative_prompt }}</textarea><br><br>
+                <textarea rows="10" id="negative_prompt" name="negative_prompt" style="width: 100%;">{{ negative_prompt }}</textarea>
                 <label for="steps">ステップ数:</label><br>
                 <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
-                <button type="submit" name="action" value="generate">生成</button><br>
 
                 <h3>画像サイズの選択</h3>
                 <label for="image_width">幅 (WIDTH):</label><br>
@@ -123,6 +121,8 @@
                     <option value="{{ h }}" {% if h== image_height %}selected{% endif %}>{{ h }}</option>
                     {% endfor %}
                 </select><br><br>
+
+                <button type="submit" name="action" value="generate">生成</button><br>
             </form>
         </div>
         <div id="right-pane">
@@ -141,6 +141,7 @@
                     <li><strong>Steps:</strong> {{ entry.metadata.steps or "" }}</li>
                     <li><strong>サイズ:</strong> {{ entry.metadata.width }} x {{ entry.metadata.height }}</li>
                     <li><strong>生成日時:</strong> {{ entry.metadata.created_at or "" }}</li>
+                    <li><strong>生成時間:</strong> {{ entry.metadata.duration }}</li>
                 </ul>
                 {% endfor %}
             </div>
@@ -158,9 +159,10 @@
     });
 
     function formatElapsed(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${minutes}分 ${secs}秒`;
+        const hrs = String(Math.floor(seconds / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+        const secs = String(seconds % 60).padStart(2, '0');
+        return `${hrs}:${mins}:${secs}`;
     }
 
     async function checkLock() {
