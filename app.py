@@ -5,6 +5,7 @@ import uuid
 import json
 import os, signal
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 
 app = Flask(__name__)
@@ -12,8 +13,13 @@ IMAGE_DIR = 'static/images'
 
 LOCK_FILE = '/tmp/generate.lock'
 
-# 日本時間のタイムゾーン設定
-JST = timezone(timedelta(hours=9))
+def get_local_timezone():
+    path = os.path.realpath('/etc/localtime')
+    zone = path.split('/usr/share/zoneinfo/')[-1]
+    return ZoneInfo(zone)
+
+local_tz = get_local_timezone()
+
 
 @app.route('/lock_status')
 def lock_status():
@@ -71,7 +77,7 @@ def index():
             base_name = os.path.basename(entry['filename'])
             name_part = os.path.splitext(base_name)[0]
             start_time = datetime.strptime(name_part, '%Y-%m-%d_%H%M%S')
-            start_time = start_time.replace(tzinfo=JST)  # JST に変換
+            start_time = start_time.replace(tzinfo=local_tz)
 
             # JSON 側
             end_time_str = entry['metadata'].get('created_at')
