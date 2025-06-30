@@ -1,5 +1,9 @@
 #!/bin/bash
 
+BASE_DIR="$(cd "$(dirname "$0")"; pwd)"
+SD_EXEC="$BASE_DIR/../OnnxStream/src/build/sd"
+MODELS_PATH="$BASE_DIR/../stable-diffusion-xl-turbo-1.0-anyshape-onnxstream"
+
 LOCKFILE="/tmp/generate.lock"
 LOGFILE="/tmp/generate.log"
 
@@ -27,9 +31,9 @@ JSONFILE="${OUTFILE}.json"
 # バックグラウンドで画像生成 + trapでロック削除
 (
   trap "rm -f $LOCKFILE" EXIT
-  /home/takahiro/OnnxStream/src/build/sd \
+ "$SD_EXEC" \
     --rpi-lowmem --turbo \
-    --models-path /home/takahiro/stable-diffusion-xl-turbo-1.0-anyshape-onnxstream/ \
+    --models-path "$MODELS_PATH" \
     --prompt "$PROMPT" \
     --neg-prompt "$NEGATIVE_PROMPT" \
     --steps "$STEPS" \

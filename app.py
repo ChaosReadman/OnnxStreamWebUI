@@ -1,12 +1,23 @@
-from flask import Flask, request, render_template, redirect, send_from_directory,jsonify
 import os
 import subprocess
 import uuid
 import json
 import os, signal
+import re
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
+from flask import Flask, request, render_template, redirect, send_from_directory,jsonify
+#from langdetect import detect
+#from deep_translator import GoogleTranslator
 
+
+# 言語→モデル名のマップ
+#lang2model = {
+#    'ja': 'Helsinki-NLP/opus-mt-ja-en',
+#    'de': 'Helsinki-NLP/opus-mt-de-en',
+#    'fr': 'Helsinki-NLP/opus-mt-fr-en',
+#    # 必要に応じて追加
+#}
 
 app = Flask(__name__)
 IMAGE_DIR = 'static/images'
@@ -20,6 +31,19 @@ def get_local_timezone():
 
 local_tz = get_local_timezone()
 
+# def translate_to_english(prompt):
+#     segments = re.split(r"[,;/、。.]", prompt)
+#     translated_segments = []
+
+#     for seg in segments:
+#         lang = detect(seg)
+#         if lang != "en":
+#             translated = GoogleTranslator(source=lang, target='en').translate(seg)
+#             translated_segments.append(translated)
+#         else:
+#             translated_segments.append(seg)  # 英語ならそのまま
+
+#     return ', '.join(translated_segments)
 
 @app.route('/lock_status')
 def lock_status():
@@ -131,12 +155,14 @@ def cancel_generation():
 def handle_form():
     action = request.form.get('action')
     prompt = request.form.get('prompt')
+#    translated_prompt = translate_to_english(prompt)
     negative_prompt = request.form.get('negative_prompt')
     steps = request.form.get('steps', '1')
     image_width = request.form.get('image_width', '512')
     image_height = request.form.get('image_height', '512')
 
     if action == 'generate':
+        
         filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
         subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps, image_width, image_height])
