@@ -34,11 +34,11 @@ JSONFILE="${OUTFILE}.json"
     --neg-prompt "$NEGATIVE_PROMPT" \
     --steps "$STEPS" \
     --res "${WIDTH}x${HEIGHT}" \
-    --output "$OUTFILE"
+    --output "$OUTFILE" >> "$LOGFILE" 2>&1
 
     # 画像生成成功後のみ
     if [ $? -eq 0 ] && [ -f "$OUTFILE" ]; then
-        echo "画像生成成功。メタデータを書き出します。"
+        echo "画像生成成功。メタデータを書き出します。" >> "$LOGFILE" 2>&1
         echo "{" > "$JSONFILE"
         echo "  \"prompt\": \"$PROMPT\"," >> "$JSONFILE"
         echo "  \"negative_prompt\": \"$NEGATIVE_PROMPT\"," >> "$JSONFILE"
@@ -47,9 +47,8 @@ JSONFILE="${OUTFILE}.json"
         echo "  \"height\": \"$HEIGHT\"," >> "$JSONFILE"
         echo "  \"created_at\": \"$(date --iso-8601=seconds)\"" >> "$JSONFILE"
         echo "}" >> "$JSONFILE"
-        >> "$LOGFILE" 2>&1
     else
-        echo "画像生成に失敗。JSONは出力しません。"
+        echo "画像生成に失敗。JSONは出力しません。" >>"$LOGFILE"
     fi
 
     rm -f "$LOCKFILE"
