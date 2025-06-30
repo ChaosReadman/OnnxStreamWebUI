@@ -48,7 +48,7 @@ cd OnnxStream/src/build/
 
 
 
-+ ここから本Gitの説明です。上記onnxstreamをcloneしたのと同じフォルダで、本 git を cloneしてください。
++ ここから本Gitの説明です。cd ~してから、本 git を cloneしてください。
 
 ```
 chmod +x launch.sh
