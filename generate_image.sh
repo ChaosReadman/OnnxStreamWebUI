@@ -17,6 +17,9 @@ if [ -f "$LOCKFILE" ]; then
         echo "Locck file left, but process was finished. Lock file deleted" >> "$LOGFILE"
         rm -f "$LOCKFILE"
     fi
+else
+    # No lock file, proceed with generation
+    echo "No lock file found, proceeding with generation." > "$LOGFILE"
 fi
 
 OUTFILE=$1
