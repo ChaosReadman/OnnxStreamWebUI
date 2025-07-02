@@ -102,8 +102,8 @@
             <form id="genForm" action="/handle_form" method="post">
                 <label for="prompt">プロンプト:</label><br>
                 <textarea rows="10" id="prompt" name="prompt" required style="width: 100%;">{{ prompt }}</textarea>
-                <label for="negative_prompt">ネガティブプロンプト:</label><br>
-                <textarea rows="10" id="negative_prompt" name="negative_prompt" style="width: 100%;">{{ negative_prompt }}</textarea>
+                <label for="negative_prompt" hidden>ネガティブプロンプト:</label><br>
+                <textarea rows="10" id="negative_prompt" name="negative_prompt" style="width: 100%;" hidden>{{ negative_prompt }}</textarea>
                 <label for="steps">ステップ数:</label><br>
                 <input type="number" id="steps" name="steps" value="{{ steps }}" min="1"><br><br>
 
