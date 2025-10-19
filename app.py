@@ -171,20 +171,40 @@ def cancel_generation():
 @app.route('/handle_form', methods=['POST'])
 def handle_form():
     action = request.form.get('action')
-    prompt = request.form.get('prompt')
+    prompt = request.form.get('prompt', '') or ''
 #    translated_prompt = translate_to_english(prompt)
-    negative_prompt = request.form.get('negative_prompt')
-    steps = request.form.get('steps', '1')
-    image_width = request.form.get('image_width', '512')
-    image_height = request.form.get('image_height', '512')
+    negative_prompt = request.form.get('negative_prompt', '') or ''
+    steps = request.form.get('steps', '1') or '1'
+    image_width = request.form.get('image_width', '512') or '512'
+    image_height = request.form.get('image_height', '512') or '512'
 
     if action == 'generate':
-        
         filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
+        json_path = filepath + '.json'
+
+        # JSON を安全に書き出す（禁則文字は json モジュールがエスケープする）
+        metadata = {
+            "prompt": prompt,
+            "negative_prompt": negative_prompt,
+            "steps": steps,
+            "width": str(image_width),
+            "height": str(image_height),
+            "created_at": datetime.now(local_tz).isoformat()
+        }
+
         try:
-            # スクリプトが無ければ例外になるのでキャッチしてログ出力する
+            with open(json_path, 'w', encoding='utf-8') as jf:
+                json.dump(metadata, jf, ensure_ascii=False, indent=2)
+        except Exception as e:
+            app.logger.exception("failed to write initial metadata: %s", e)
+
+        try:
+            # generate_image.sh が終了したタイミングで再度タイムスタンプを更新する
             subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps, image_width, image_height], check=False)
+            metadata['created_at'] = datetime.now(local_tz).isoformat()
+            with open(json_path, 'w', encoding='utf-8') as jf:
+                json.dump(metadata, jf, ensure_ascii=False, indent=2)
         except Exception as e:
             app.logger.exception("generate_image.sh failed: %s", e)
 
