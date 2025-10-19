@@ -22,6 +22,9 @@ from flask import Flask, request, render_template, redirect, send_from_directory
 app = Flask(__name__)
 IMAGE_DIR = 'static/images'
 
+# ensure image directory exists at import time to avoid FileNotFoundError in routes
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
 LOCK_FILE = '/tmp/generate.lock'
 
 def get_local_timezone():
@@ -124,8 +127,12 @@ def index():
     prompt = request.args.get('prompt', '')
     negative_prompt = request.args.get('negative_prompt', '')
     steps = request.args.get('steps', '1')
-    image_width = request.args.get("image_width", "512").strip()
-    image_height = request.args.get("image_height", "512").strip()
+    image_width_str = request.args.get("image_width", "512").strip()
+    image_height_str = request.args.get("image_height", "512").strip()
+
+    # int()変換前に値が数字かチェック
+    image_width = int(image_width_str) if image_width_str.isdigit() else 512
+    image_height = int(image_height_str) if image_height_str.isdigit() else 512
 
     return render_template(
         'index.html',
@@ -133,8 +140,8 @@ def index():
         prompt=prompt,
         negative_prompt=negative_prompt,
         steps=steps,
-        image_width=int(image_width),
-        image_height=int(image_height)
+        image_width=image_width,
+        image_height=image_height
      )
 
 @app.route("/cancel", methods=["POST"])
@@ -142,12 +149,22 @@ def cancel_generation():
 
     if os.path.exists(LOCK_FILE):
         with open(LOCK_FILE) as f:
-            pid = int(f.read())
-        try:
-            os.kill(pid, signal.SIGTERM)
-            return jsonify({"status": "killed", "pid": pid})
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
+            content = f.read().strip()
+        # 安全に pid を検証してから int に変換
+        if content.isdigit() and os.path.exists(f"/proc/{content}"):
+            pid = int(content)
+            try:
+                os.kill(pid, signal.SIGTERM)
+                return jsonify({"status": "killed", "pid": pid})
+            except Exception as e:
+                return jsonify({"status": "error", "message": str(e)})
+        else:
+            # 無効な PID またはプロセスが存在しない場合はロックファイルを削除して通知
+            try:
+                os.remove(LOCK_FILE)
+            except Exception:
+                pass
+            return jsonify({"status": "invalid_pid_or_not_running"})
     else:
         return jsonify({"status": "no_pidfile"})
 
@@ -165,7 +182,11 @@ def handle_form():
         
         filename = datetime.now().strftime("%Y-%m-%d_%H%M%S.png")
         filepath = os.path.join(IMAGE_DIR, filename)
-        subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps, image_width, image_height])
+        try:
+            # スクリプトが無ければ例外になるのでキャッチしてログ出力する
+            subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps, image_width, image_height], check=False)
+        except Exception as e:
+            app.logger.exception("generate_image.sh failed: %s", e)
 
     return redirect(f"/?prompt={prompt}&negative_prompt={negative_prompt}&steps={steps}&image_width={image_width}&image_height={image_height}")
 
@@ -185,4 +206,3 @@ def download_image(filename):
 if __name__ == '__main__':
     os.makedirs(IMAGE_DIR, exist_ok=True)
     app.run(debug=True, host='0.0.0.0', port=5000)
-
