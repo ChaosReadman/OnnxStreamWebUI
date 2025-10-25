@@ -78,8 +78,13 @@ def latest_metadata():
     if not json_files:
         return jsonify({})
 
-    with open(json_files[0]) as f:
-        data = json.load(f)
+    try:
+        with open(json_files[0]) as f:
+            data = json.load(f)
+    except json.JSONDecodeError:
+        return jsonify({"error": "JSONファイルが壊れています"})
+    except Exception as e:
+        return jsonify({"error": f"メタデータの読み込みエラー: {str(e)}"})
 
     return jsonify(data)
 
@@ -91,8 +96,13 @@ def index():
             json_file = os.path.join(IMAGE_DIR, image_file + '.json')
             metadata = {}
             if os.path.exists(json_file):
-                with open(json_file) as f:
-                    metadata = json.load(f)
+                try:
+                    with open(json_file) as f:
+                        metadata = json.load(f)
+                except json.JSONDecodeError:
+                    print(f"[JSONエラー] {json_file}: JSONファイルが壊れています")
+                except Exception as e:
+                    print(f"[メタデータエラー] {json_file}: {str(e)}")
             image_entries.append({
                 "filename": image_file,
                 "metadata": metadata
@@ -193,18 +203,31 @@ def handle_form():
             "created_at": datetime.now(local_tz).isoformat()
         }
 
-        try:
-            with open(json_path, 'w', encoding='utf-8') as jf:
-                json.dump(metadata, jf, ensure_ascii=False, indent=2)
-        except Exception as e:
-            app.logger.exception("failed to write initial metadata: %s", e)
+        def write_json_safely(path, data):
+            temp_path = path + '.tmp'
+            try:
+                with open(temp_path, 'w', encoding='utf-8') as jf:
+                    json.dump(data, jf, ensure_ascii=False, indent=2)
+                os.replace(temp_path, path)  # アトミックな書き込み
+                return True
+            except Exception as e:
+                app.logger.exception("JSON書き込みエラー: %s", e)
+                if os.path.exists(temp_path):
+                    try:
+                        os.remove(temp_path)
+                    except:
+                        pass
+                return False
+
+        # 初期メタデータの書き込み
+        if not write_json_safely(json_path, metadata):
+            return redirect('/')  # エラーが発生した場合は早期リターン
 
         try:
             # generate_image.sh が終了したタイミングで再度タイムスタンプを更新する
             subprocess.run(["bash", "generate_image.sh", filepath, prompt, negative_prompt, steps, image_width, image_height], check=False)
             metadata['created_at'] = datetime.now(local_tz).isoformat()
-            with open(json_path, 'w', encoding='utf-8') as jf:
-                json.dump(metadata, jf, ensure_ascii=False, indent=2)
+            write_json_safely(json_path, metadata)
         except Exception as e:
             app.logger.exception("generate_image.sh failed: %s", e)
 
