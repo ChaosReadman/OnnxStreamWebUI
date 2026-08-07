@@ -2,7 +2,7 @@
 
 BASE_DIR="$(cd "$(dirname "$0")"; pwd)"
 SD_EXEC="$BASE_DIR/../OnnxStream/src/build/sd"
-MODELS_PATH="$BASE_DIR/../models"
+MODELS_PATH="$BASE_DIR/../OnnxStream/src/build"
 
 LOCKFILE="/tmp/generate.lock"
 LOGFILE="/tmp/generate.log"
