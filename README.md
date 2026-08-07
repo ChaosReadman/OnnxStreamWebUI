@@ -43,7 +43,7 @@ chmod +x launch.sh
     http://RaspberryPiのURL:5000 を開き
     プロンプトに以下を注入
     ```
-    anime stye, a beattiful anime girl in a flower field, detaild illustration, soft sunlight, variant colors, rules of thirds, long flowing hair, big eyes, cute expression, detailed facial features, realistic skin texture, shiny white hair, flowing fabric
+    anime stye, a beautiful anime girl in a flower field, detailed illustration, soft sunlight, variant colors, rules of thirds, long flowing hair, big eyes, cute expression, detailed facial features, realistic skin texture, shiny white hair, flowing fabric
     ```
     Stepは５、サイズは1024 x 768で生成してみてください
 
