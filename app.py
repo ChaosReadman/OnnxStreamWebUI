@@ -7,17 +7,10 @@ import re
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request, render_template, redirect, send_from_directory,jsonify
+from pathlib import Path
 #from langdetect import detect
 #from deep_translator import GoogleTranslator
 
-
-# 言語→モデル名のマップ
-#lang2model = {
-#    'ja': 'Helsinki-NLP/opus-mt-ja-en',
-#    'de': 'Helsinki-NLP/opus-mt-de-en',
-#    'fr': 'Helsinki-NLP/opus-mt-fr-en',
-#    # 必要に応じて追加
-#}
 
 app = Flask(__name__)
 IMAGE_DIR = 'static/images'
@@ -27,41 +20,42 @@ os.makedirs(IMAGE_DIR, exist_ok=True)
 
 LOCK_FILE = '/tmp/generate.lock'
 
+from zoneinfo import ZoneInfo
+
+# タイムゾーン取得部分を安全に固定する
 def get_local_timezone():
-    path = os.path.realpath('/etc/localtime')
-    zone = path.split('/usr/share/zoneinfo/')[-1]
-    return ZoneInfo(zone)
+    return ZoneInfo("Asia/Tokyo")
 
 local_tz = get_local_timezone()
-
-# def translate_to_english(prompt):
-#     segments = re.split(r"[,;/、。.]", prompt)
-#     translated_segments = []
-
-#     for seg in segments:
-#         lang = detect(seg)
-#         if lang != "en":
-#             translated = GoogleTranslator(source=lang, target='en').translate(seg)
-#             translated_segments.append(translated)
-#         else:
-#             translated_segments.append(seg)  # 英語ならそのまま
-
-#     return ', '.join(translated_segments)
 
 @app.route('/lock_status')
 def lock_status():
     if os.path.exists(LOCK_FILE):
         with open(LOCK_FILE) as f:
-            pid = f.read().strip()
+            pid_str = f.read().strip()
         started_at = os.path.getmtime(LOCK_FILE)
 
-        if pid.isdigit() and os.path.exists(f"/proc/{pid}"):
+        is_running = False
+        if pid_str.isdigit():
+            pid = int(pid_str)
+            try:
+                # シグナル0を送ることで、プロセスが生存しているか確認（エラーが出なければ生存）
+                os.kill(pid, 0)
+                is_running = True
+            except OSError:
+                is_running = False
+
+        if is_running:
             return jsonify({
                 'locked': True,
                 'started_at': started_at
             })
         else:
-            os.remove(LOCK_FILE)
+            # プロセスが死んでいたらロックファイルを削除
+            try:
+                os.remove(LOCK_FILE)
+            except Exception:
+                pass
     return jsonify({'locked': False})
 
 @app.route('/latest_metadata')
@@ -116,10 +110,18 @@ def index():
             start_time = datetime.strptime(name_part, '%Y-%m-%d_%H%M%S')
             start_time = start_time.replace(tzinfo=local_tz)
 
-            # JSON 側
+# JSON 側
             end_time_str = entry['metadata'].get('created_at')
             if end_time_str:
+                # 末尾の 'Z' を '+00:00' に置換して Python 3.9 でも安全に読めるようにする
+                if end_time_str.endswith('Z'):
+                    end_time_str = end_time_str[:-1] + '+00:00'
+                
                 end_time = datetime.fromisoformat(end_time_str)
+                
+                if end_time.tzinfo is None:
+                    end_time = end_time.replace(tzinfo=timezone.utc)
+                end_time = end_time.astimezone(local_tz)
 
                 delta = end_time - start_time
                 seconds = int(delta.total_seconds())
@@ -156,20 +158,27 @@ def index():
 
 @app.route("/cancel", methods=["POST"])
 def cancel_generation():
-
     if os.path.exists(LOCK_FILE):
         with open(LOCK_FILE) as f:
             content = f.read().strip()
-        # 安全に pid を検証してから int に変換
-        if content.isdigit() and os.path.exists(f"/proc/{content}"):
+        
+        is_running = False
+        pid = 0
+        if content.isdigit():
             pid = int(content)
+            try:
+                os.kill(pid, 0)
+                is_running = True
+            except OSError:
+                is_running = False
+
+        if is_running:
             try:
                 os.kill(pid, signal.SIGTERM)
                 return jsonify({"status": "killed", "pid": pid})
             except Exception as e:
                 return jsonify({"status": "error", "message": str(e)})
         else:
-            # 無効な PID またはプロセスが存在しない場合はロックファイルを削除して通知
             try:
                 os.remove(LOCK_FILE)
             except Exception:
@@ -182,7 +191,12 @@ def cancel_generation():
 def handle_form():
     action = request.form.get('action')
     prompt = request.form.get('prompt', '') or ''
-#    translated_prompt = translate_to_english(prompt)
+    # 1. 改行(\r\n, \n, \r)をすべて半角スペース（または空文字）に置換
+    prompt = prompt.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ')
+
+    # 2. ダブルクォーテーションを全角（” または ＂）に置換（シングルも同様に）
+    prompt = prompt.replace('"', '”').replace("'", "’")
+
     negative_prompt = request.form.get('negative_prompt', '') or ''
     steps = request.form.get('steps', '1') or '1'
     image_width = request.form.get('image_width', '512') or '512'

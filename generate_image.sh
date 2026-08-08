@@ -53,7 +53,7 @@ JSONFILE="${OUTFILE}.json"
         echo "  \"steps\": \"$STEPS\"," >> "$JSONFILE"
         echo "  \"width\": \"$WIDTH\"," >> "$JSONFILE"
         echo "  \"height\": \"$HEIGHT\"," >> "$JSONFILE"
-        echo "  \"created_at\": \"$(date --iso-8601=seconds)\"" >> "$JSONFILE"
+        echo "  \"created_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> "$JSONFILE"
         echo "}" >> "$JSONFILE"
     else
         echo "Failed to generate, no JSON output." >>"$LOGFILE"

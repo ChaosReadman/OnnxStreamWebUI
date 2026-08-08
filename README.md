@@ -20,12 +20,17 @@ cmake --build . --config Release
 
 
 最近のバージョンでは自動的に選択したモデルをダウンロードするらしい
+さきほどbuildしたフォルダにsdが出来上がっていると思うので、
+以下コマンドを入力すると、画像が生成される。
+ここで --downloadオプションを付けることによってモデルがダウンロードされる
+モデルのダウンロードを行わないと、この先のOnnxSreamWebUIでの画像生成ができないので、
+このステップは必ず行ってください。
+ただの画像生成のお試しではなく、モデルのダウンロードを兼ねたステップです。
 
 ```
-cd ~/OnnxStream/src/build
 ./sd --rpi-lowmem --turbo  --prompt "An astronaut riding a horse on Mars" --steps 1 --output astronaut.png --download
 ```
-これで、astronaut.pngが出来上がると思うのでここまで確認してください。--downloadが指定されているので、モデルもダウンロードされます（ここかなり時間がかかります）
+これで、astronaut.pngが出来上がります。モデルのダウンロードにはやただ時間がかかります。
 
 実は他のモデルも試してみたのですが、時間がかかるわ、クオリティ低いわで使えないと判断しました。今回は、turboだけ使うことにします。ただし、turboだとネガティブプロンプトが使えません。この辺り少し残念に感じますが仕方ありません。
 
@@ -36,8 +41,8 @@ cd ~/OnnxStream/src/build
 ```
 chmod +x launch.sh
 ./launch.sh
-
 ```
+Macの場合はlaunch4Mac.shを実行してください
 
 + 起動確認  
     http://RaspberryPiのURL:5000 を開き
@@ -45,9 +50,9 @@ chmod +x launch.sh
     ```
     anime stye, a beautiful anime girl in a flower field, detailed illustration, soft sunlight, variant colors, rules of thirds, long flowing hair, big eyes, cute expression, detailed facial features, realistic skin texture, shiny white hair, flowing fabric
     ```
-    Stepは５、サイズは1024 x 768で生成してみてください
+    Stepは1、サイズは512 x 512でのままでOKです
 
-    おそらく２時間ちょいかかりますがなにやら画像が生成されることでしょう。
+    時間は少しかかりますが、なにやら画像が生成されることでしょう。
 
 + 最後に  
 今回のWebUIでは、turboモデルのみ対応しています。他のモデルをつかってみたところ、使い物にならなかったので、turboだけでいいやという判断をしました。異論があれば受け入れますので、どうぞご連絡ください。
